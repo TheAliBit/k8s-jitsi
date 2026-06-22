@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: jitsi-config
+  namespace: jitsi
+data:
+  PUBLIC_URL: "https://meet.local"
+  XMPP_SERVER: "prosody"
+  XMPP_DOMAIN: "meet.local"
+  XMPP_BOSH_URL_BASE: "http://prosody:5280"
+  TZ: "UTC"

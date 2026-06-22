@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jvb
+  namespace: jitsi
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jvb
+  template:
+    metadata:
+      labels:
+        app: jvb
+    spec:
+      containers:
+        - name: jvb
+          image: jitsi/jvb:latest
+          ports:
+            - containerPort: 10000
+              protocol: UDP
+          envFrom:
+            - configMapRef:
+                name: jitsi-config
+            - secretRef:
+                name: jitsi-secret

@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jitsi-web
+  namespace: jitsi
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jitsi-web
+  template:
+    metadata:
+      labels:
+        app: jitsi-web
+    spec:
+      containers:
+        - name: web
+          image: jitsi/web:latest
+          ports:
+            - containerPort: 80
+          envFrom:
+            - configMapRef:
+                name: jitsi-config
