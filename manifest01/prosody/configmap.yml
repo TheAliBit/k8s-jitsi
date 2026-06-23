@@ -1,0 +1,41 @@
+# =============================================================================
+# 01-prosody.yaml
+# COMPONENT: Prosody (XMPP server)
+#
+# ROLE: Central message broker for all Jitsi components.
+#   - Handles XMPP signalling between web clients, jicofo, and jvb
+#   - Manages conference room creation/destruction via MUC (Multi-User Chat)
+#   - Authenticates jicofo and jvb using credentials from jitsi-secrets
+#
+# DEPENDENCIES: None — must be running before jicofo, jvb, and web.
+#
+# PORTS:
+#   5222 → XMPP client-to-server  (jicofo, jvb connect here)
+#   5347 → XMPP component port    (external components)
+#   5280 → BOSH / WebSocket HTTP  (web frontend connects here for signalling)
+#
+# SCALING NOTE: Prosody is stateful per-conference. Run as a single replica.
+#   Horizontal scaling requires a distributed Prosody setup (out of scope here).
+# =============================================================================
+ 
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prosody-config
+  namespace: jitsi
+  labels:
+    app.kubernetes.io/name: prosody
+    app.kubernetes.io/part-of: jitsi-meet
+data:
+  # Prosody is configured primarily via environment variables in the
+  # jitsi/prosody Docker image. Additional Lua config can be mounted here
+  # and referenced via PROSODY_CUSTOM_CONFIG if needed in future.
+  #
+  # Extension point: mount custom prosody modules into /prosody-plugins-custom
+  # by adding a ConfigMap volume with your .lua files.
+  ENABLE_AUTH: "1"           # Require authentication for XMPP clients
+  ENABLE_GUESTS: "1"         # Allow unauthenticated guest access
+  AUTH_TYPE: "internal"      # Use internal Prosody user database
+  LOG_LEVEL: "info"          # Change to "debug" for troubleshooting
+ 
+

@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: web
-          image: jitsi/web:latest
+          image: jitsi/web:web-1.0.9293-1
           ports:
             - containerPort: 80
           envFrom:

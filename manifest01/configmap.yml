@@ -1,0 +1,47 @@
+# =============================================================================
+# Shared ConfigMap — non-sensitive configuration consumed by all components.
+# Centralising here means a single place to update the domain, XMPP settings,
+# and feature flags without touching individual Deployments.
+# =============================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: jitsi-common-config
+  namespace: jitsi
+  labels:
+    app.kubernetes.io/part-of: jitsi-meet
+data:
+  # ── Domain ─────────────────────────────────────────────────────────────────
+  PUBLIC_URL: "https://meet.example.com"
+  XMPP_DOMAIN: "meet.jitsi"           # Internal XMPP domain (not public-facing)
+  XMPP_AUTH_DOMAIN: "auth.meet.jitsi" # Sub-domain for component authentication
+  XMPP_MUC_DOMAIN: "muc.meet.jitsi"  # Multi-User Chat domain for conference rooms
+  XMPP_INTERNAL_MUC_DOMAIN: "internal.auth.meet.jitsi" # Internal MUC for JVB/jicofo
+  XMPP_GUEST_DOMAIN: "guest.meet.jitsi" # Guest access domain (unauthenticated users)
+ 
+  # ── Prosody service discovery (DNS name inside the cluster) ────────────────
+  XMPP_SERVER: "prosody.jitsi.svc.cluster.local"
+  XMPP_PORT: "5222"
+  XMPP_BOSH_URL_BASE: "http://prosody.jitsi.svc.cluster.local:5280"
+ 
+  # ── Jicofo ─────────────────────────────────────────────────────────────────
+  JICOFO_AUTH_USER: "focus"           # XMPP username jicofo uses to log in
+  JICOFO_SUBDOMAIN: "focus"
+ 
+  # ── JVB (Jitsi Videobridge) ────────────────────────────────────────────────
+  JVB_AUTH_USER: "jvb"               # XMPP username JVB uses to log in
+  JVB_BREWERY_MUC: "jvbbrewery"      # MUC room JVBs register into (load-balancing)
+  JVB_PORT: "10000"                  # UDP port for WebRTC media — must be reachable from browsers
+  JVB_TCP_HARVESTER_DISABLED: "true" # Disable TCP fallback (use TURN if needed later)
+  # TURN extension point — uncomment and populate when adding a TURN server:
+  # TURN_HOST: ""
+  # TURN_PORT: ""
+  # TURN_SECRET: ""
+  # TURN_TRANSPORT: "udp"
+ 
+  # ── Web / feature flags ────────────────────────────────────────────────────
+  ENABLE_LETSENCRYPT: "0"             # TLS handled by ingress — disable internal cert
+  DISABLE_HTTPS: "1"                  # Web container serves plain HTTP; TLS at ingress
+  ENABLE_HTTP_REDIRECT: "0"
+  TZ: "UTC"
+

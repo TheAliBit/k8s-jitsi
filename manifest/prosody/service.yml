@@ -7,6 +7,10 @@ spec:
   selector:
     app: prosody
   ports:
-    - port: 5222
-    - port: 5280
+    - name: xmpp
+      port: 5222
+      targetPort: 5222
+    - name: http
+      port: 5280
+      targetPort: 5280
   type: ClusterIP

@@ -1,0 +1,116 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jvb
+  namespace: jitsi
+  labels:
+    app.kubernetes.io/name: jvb
+    app.kubernetes.io/part-of: jitsi-meet
+spec:
+  # Start with 1 replica. Scale out for larger capacity.
+  # See SCALING note above — each additional replica needs its own public IP.
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: jvb
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: jvb
+        app.kubernetes.io/part-of: jitsi-meet
+    spec:
+      restartPolicy: Always
+ 
+      # JVB connects to Prosody on startup — wait for it to be ready.
+      initContainers:
+        - name: wait-for-prosody
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              echo "Waiting for Prosody XMPP on prosody:5222..."
+              until nc -z prosody.jitsi.svc.cluster.local 5222; do
+                echo "Prosody not ready — sleeping 5s"
+                sleep 5
+              done
+              echo "Prosody is up — starting jvb"
+          resources:
+            requests:
+              cpu: "10m"
+              memory: "16Mi"
+            limits:
+              cpu: "50m"
+              memory: "32Mi"
+ 
+      containers:
+        - name: jvb
+          image: jitsi/jvb:stable-9364
+          imagePullPolicy: IfNotPresent
+ 
+          ports:
+            # UDP 10000: primary WebRTC media port — must be reachable from internet
+            - name: media-udp
+              containerPort: 10000
+              protocol: UDP
+            # TCP 4443: optional TCP fallback for clients behind UDP-blocking firewalls
+            # Enable by removing the comment and adding to the Service below
+            # - name: media-tcp
+            #   containerPort: 4443
+            #   protocol: TCP
+            # HTTP REST: internal health and stats
+            - name: http-api
+              containerPort: 8080
+              protocol: TCP
+ 
+          envFrom:
+            - configMapRef:
+                name: jitsi-common-config
+            - configMapRef:
+                name: jvb-config
+ 
+          env:
+            # JVB authenticates to Prosody as user "jvb@auth.meet.jitsi"
+            - name: JVB_AUTH_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: jitsi-secrets
+                  key: JVB_AUTH_PASSWORD
+            - name: JVB_COMPONENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: jitsi-secrets
+                  key: JVB_COMPONENT_SECRET
+ 
+          # ── Probes ─────────────────────────────────────────────────────────
+          # JVB exposes /about/health on its REST port.
+          readinessProbe:
+            httpGet:
+              path: /about/health
+              port: 8080
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            failureThreshold: 3
+ 
+          livenessProbe:
+            httpGet:
+              path: /about/health
+              port: 8080
+            initialDelaySeconds: 40
+            periodSeconds: 20
+            failureThreshold: 5
+ 
+          # ── Resources ──────────────────────────────────────────────────────
+          # JVB is the most resource-intensive component.
+          # CPU: 500m handles ~20-30 concurrent video streams.
+          # Memory: 1Gi is baseline; large conferences may need 2Gi+.
+          # In production, benchmark and tune based on your conference load.
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "512Mi"
+            limits:
+              cpu: "2000m"
+              memory: "1536Mi"
+ 
+

@@ -1,0 +1,52 @@
+# =============================================================================
+# 04-web.yaml
+# COMPONENT: Jitsi Web (Nginx + Jitsi Meet React app)
+#
+# ROLE: Serves the Jitsi Meet web application and proxies XMPP signalling.
+#   - Serves the React SPA (static assets, config.js, interface_config.js)
+#   - Proxies BOSH/WebSocket requests to Prosody (/http-bind, /xmpp-websocket)
+#   - Acts as the entry point for browser clients via the Ingress
+#
+# TRAFFIC INTO THIS COMPONENT:
+#   NGINX Ingress ──HTTP(80)──▶ jitsi-web:80 ──▶ static assets
+#                 ──WS──────▶  jitsi-web:80 ──▶ proxied to prosody:5280
+#
+# DEPENDENCIES:
+#   - prosody (BOSH proxy target at /http-bind and /xmpp-websocket)
+#   - TLS is terminated at the Ingress — this container runs plain HTTP
+#
+# SCALING: Stateless — scale replicas freely based on HTTP traffic.
+# =============================================================================
+ 
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: web-config
+  namespace: jitsi
+  labels:
+    app.kubernetes.io/name: web
+    app.kubernetes.io/part-of: jitsi-meet
+data:
+  # ── Jitsi Meet application-level feature config ───────────────────────────
+  # These control the client-side behaviour of the Meet UI.
+  # Full reference: https://jitsi.github.io/handbook/docs/dev-guide/dev-guide-configuration
+ 
+  ENABLE_WELCOME_PAGE: "1"         # Show the lobby/welcome page before joining
+  ENABLE_CLOSE_PAGE: "0"           # Show a "call ended" page after leaving
+  DEFAULT_LANGUAGE: "en"           # Default UI language
+  ENABLE_NOISY_MIC_DETECTION: "1"
+  ENABLE_TALK_WHILE_MUTED: "1"    # Notify user if they speak while muted
+ 
+  # ── HTTPS / redirect ──────────────────────────────────────────────────────
+  # TLS is handled by NGINX Ingress — the container itself runs HTTP only.
+  DISABLE_HTTPS: "1"
+  ENABLE_HTTP_REDIRECT: "0"
+  ENABLE_LETSENCRYPT: "0"
+ 
+  # ── XMPP WebSocket / BOSH proxy target (Prosody) ─────────────────────────
+  # The web container's nginx config proxies these paths to Prosody.
+  # These values are baked into config.js served to browsers.
+  BOSH_URL_SUFFIX: "/http-bind"
+  WEBSOCKET_URL_SUFFIX: "/xmpp-websocket"
+ 
+

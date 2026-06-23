@@ -1,0 +1,116 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prosody
+  namespace: jitsi
+  labels:
+    app.kubernetes.io/name: prosody
+    app.kubernetes.io/part-of: jitsi-meet
+spec:
+  # Single replica — Prosody holds in-memory conference state.
+  # For HA, consider a Prosody cluster or an external XMPP backend.
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: prosody
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: prosody
+        app.kubernetes.io/part-of: jitsi-meet
+    spec:
+      # Restart policy: let Kubernetes restart on crash; conferences will
+      # drop but clients auto-reconnect with modern Jitsi web.
+      restartPolicy: Always
+ 
+      containers:
+        - name: prosody
+          # Pin to a stable release tag in production — never use :latest
+          image: jitsi/prosody:stable-9364
+          imagePullPolicy: IfNotPresent
+ 
+          ports:
+            - name: xmpp-client   # jicofo + jvb connect here
+              containerPort: 5222
+              protocol: TCP
+            - name: xmpp-comp     # component protocol (legacy/extensibility)
+              containerPort: 5347
+              protocol: TCP
+            - name: bosh          # BOSH/WebSocket for web clients
+              containerPort: 5280
+              protocol: TCP
+ 
+          # ── Environment: shared domain config ──────────────────────────────
+          envFrom:
+            - configMapRef:
+                name: jitsi-common-config
+            - configMapRef:
+                name: prosody-config
+ 
+          # ── Environment: secrets injected as individual env vars ────────────
+          env:
+            - name: JICOFO_AUTH_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: jitsi-secrets
+                  key: JICOFO_AUTH_PASSWORD
+            - name: JVB_AUTH_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: jitsi-secrets
+                  key: JVB_AUTH_PASSWORD
+            - name: JICOFO_COMPONENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: jitsi-secrets
+                  key: JICOFO_COMPONENT_SECRET
+            - name: JVB_COMPONENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: jitsi-secrets
+                  key: JVB_COMPONENT_SECRET
+ 
+          # ── Probes ─────────────────────────────────────────────────────────
+          # BOSH endpoint returns 200 on GET — lightweight HTTP health check.
+          readinessProbe:
+            httpGet:
+              path: /http-bind
+              port: 5280
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            failureThreshold: 3
+ 
+          livenessProbe:
+            httpGet:
+              path: /http-bind
+              port: 5280
+            initialDelaySeconds: 30
+            periodSeconds: 20
+            failureThreshold: 5
+ 
+          # ── Resources ──────────────────────────────────────────────────────
+          # Prosody is lightweight. Adjust limits upward for large deployments
+          # (100+ concurrent conferences will need more memory).
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+ 
+          # ── Storage ────────────────────────────────────────────────────────
+          # Prosody stores user data in /var/lib/prosody.
+          # For production with persistent guest tokens or registered users,
+          # replace emptyDir with a PersistentVolumeClaim.
+          volumeMounts:
+            - name: prosody-data
+              mountPath: /var/lib/prosody
+ 
+      volumes:
+        - name: prosody-data
+          # emptyDir is intentional: conference state is ephemeral.
+          # Upgrade to a PVC if you enable persistent user registration.
+          emptyDir: {}
+ 
+

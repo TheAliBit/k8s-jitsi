@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: jicofo
-          image: jitsi/jicofo:latest
+          image: jitsi/jicofo:jicofo-1.0-1184-1
           envFrom:
             - configMapRef:
                 name: jitsi-config

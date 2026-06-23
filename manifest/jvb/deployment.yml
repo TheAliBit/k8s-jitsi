@@ -13,9 +13,11 @@ spec:
       labels:
         app: jvb
     spec:
+      securityContext:
+        fsGroup: 1000   # ensures volumes are group-writable by the container user
       containers:
         - name: jvb
-          image: jitsi/jvb:latest
+          image: jitsi/jvb:jvb-2.3-296-g318c08ddc-1
           ports:
             - containerPort: 10000
               protocol: UDP
@@ -24,3 +26,15 @@ spec:
                 name: jitsi-config
             - secretRef:
                 name: jitsi-secret
+          volumeMounts:
+            - name: jvb-run
+              mountPath: /run/jvb
+            - name: jitsi-config-volume
+              mountPath: /run/jvb/config/jvb.conf
+              subPath: jvb.conf
+      volumes:
+        - name: jvb-run
+          emptyDir: {}
+        - name: jitsi-config-volume
+          configMap:
+            name: jitsi-config

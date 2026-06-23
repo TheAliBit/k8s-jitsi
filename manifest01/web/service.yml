@@ -1,0 +1,24 @@
+# =============================================================================
+# Service: web
+# Internal ClusterIP — the Ingress controller proxies to this service.
+# Not exposed externally; the Ingress (05-ingress.yaml) handles that.
+# =============================================================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: web
+  namespace: jitsi
+  labels:
+    app.kubernetes.io/name: web
+    app.kubernetes.io/part-of: jitsi-meet
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: web
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+      protocol: TCP
+ 
+

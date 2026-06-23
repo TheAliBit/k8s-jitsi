@@ -1,0 +1,32 @@
+# =============================================================================
+# Service: prosody
+# Type: ClusterIP — internal only, not exposed outside the cluster.
+# All other Jitsi components reach Prosody via:
+#   prosody.jitsi.svc.cluster.local
+# =============================================================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: prosody
+  namespace: jitsi
+  labels:
+    app.kubernetes.io/name: prosody
+    app.kubernetes.io/part-of: jitsi-meet
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: prosody
+  ports:
+    - name: xmpp-client
+      port: 5222
+      targetPort: xmpp-client
+      protocol: TCP
+    - name: xmpp-comp
+      port: 5347
+      targetPort: xmpp-comp
+      protocol: TCP
+    - name: bosh
+      port: 5280
+      targetPort: bosh
+      protocol: TCP
+

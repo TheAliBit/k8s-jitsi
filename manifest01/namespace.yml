@@ -1,0 +1,27 @@
+# 00-namespace-config-secrets.yaml
+# PURPOSE: Foundation layer — apply this first before any other manifest.
+#
+# Contains:
+#   - Namespace:  jitsi  (all resources live here)
+#   - ConfigMap:  jitsi-common-config  (shared env vars across all components)
+#   - Secret:     jitsi-secrets  (XMPP auth passwords — replace before deploy)
+#
+# TRAFFIC OVERVIEW (end-to-end):
+#
+#   Browser ──HTTPS──▶ NGINX Ingress ──HTTP──▶ jitsi-web (port 80)
+#                                    ──WSS──▶  jitsi-web ──▶ prosody (5222/5347)
+#   Browser ──UDP/10000──▶ jitsi-jvb (media — exposed via NodePort or LoadBalancer)
+#
+#   Internal XMPP flow:
+#     jicofo ──▶ prosody:5222  (client XMPP — conference control)
+#     jvb    ──▶ prosody:5222  (client XMPP — bridge registration)
+#     jicofo ──▶ prosody:5347  (component XMPP — optional legacy)
+#     web    ──▶ prosody:5280  (BOSH/WebSocket HTTP)
+# =============================================================================
+ 
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: jitsi
+  labels:
+    app.kubernetes.io/part-of: jitsi-meet

@@ -1,0 +1,70 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web
+  namespace: jitsi
+  labels:
+    app.kubernetes.io/name: web
+    app.kubernetes.io/part-of: jitsi-meet
+spec:
+  # Stateless — scale freely. Two replicas for basic HA.
+  replicas: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: web
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: web
+        app.kubernetes.io/part-of: jitsi-meet
+    spec:
+      restartPolicy: Always
+ 
+      containers:
+        - name: web
+          image: jitsi/web:stable-9364
+          imagePullPolicy: IfNotPresent
+ 
+          ports:
+            # HTTP only — TLS is terminated at the Ingress controller
+            - name: http
+              containerPort: 80
+              protocol: TCP
+ 
+          envFrom:
+            - configMapRef:
+                name: jitsi-common-config
+            - configMapRef:
+                name: web-config
+ 
+          # ── Probes ─────────────────────────────────────────────────────────
+          # The web root (/) serves the Jitsi Meet SPA — a 200 means healthy.
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            failureThreshold: 3
+ 
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 20
+            periodSeconds: 20
+            failureThreshold: 5
+ 
+          # ── Resources ──────────────────────────────────────────────────────
+          # Web is Nginx serving static files — very low resource footprint.
+          # Increase if you serve many concurrent users (many TLS handshakes
+          # are handled at the Ingress, not here).
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "500m"
+              memory: "256Mi"
+ 
+

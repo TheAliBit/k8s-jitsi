@@ -1,0 +1,61 @@
+# =============================================================================
+# 03-jvb.yaml
+# COMPONENT: JVB (Jitsi Videobridge)
+#
+# ROLE: WebRTC media router — the most network-critical component.
+#   - Receives audio/video from participants and forwards to others (SFU model)
+#   - Communicates its presence to jicofo via the "jvbbrewery" MUC in Prosody
+#   - Runs DTLS-SRTP/ICE for encrypted media transport
+#
+# TRAFFIC:
+#   Inbound (from browsers):  UDP 10000  (WebRTC media — ICE/DTLS/SRTP)
+#   Inbound (from browsers):  TCP 4443   (WebRTC TCP fallback — optional)
+#   Outbound: XMPP to prosody:5222       (bridge registration + stats)
+#
+# ⚠️  CRITICAL NETWORKING REQUIREMENT:
+#   JVB must advertise the correct PUBLIC IP to browsers for ICE negotiation.
+#   Set JVB_ADVERTISE_IPS to the node's public IP or a LoadBalancer IP.
+#   Without this, media will not flow even if everything else is healthy.
+#
+# DEPENDENCIES:
+#   - prosody must be running (JVB registers itself via XMPP)
+#   - jicofo must be running (reads JVB availability from jvbbrewery MUC)
+#
+# SCALING: JVB scales horizontally — add replicas to increase media capacity.
+#   Each JVB replica registers independently into the jvbbrewery MUC.
+#   Jicofo load-balances conferences across available bridges.
+#   Note: Each JVB pod needs its own UDP 10000 exposure (use DaemonSet +
+#   hostNetwork for simplest multi-node scaling, or a LoadBalancer per pod).
+# =============================================================================
+ 
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: jvb-config
+  namespace: jitsi
+  labels:
+    app.kubernetes.io/name: jvb
+    app.kubernetes.io/part-of: jitsi-meet
+data:
+  # ── JVB advertise address ────────────────────────────────────────────────
+  # This IP is sent to browsers via ICE candidates so they can reach JVB.
+  # Options:
+  #   1. Set to your node's public IP (single-node setup)
+  #   2. Set to a LoadBalancer external IP assigned to the jvb-media Service
+  #   3. Leave empty and set via JVB_OCTO_RELAY_ID for multi-region (advanced)
+  #
+  # ⚠️  MUST BE SET CORRECTLY — replace with actual public IP or LB IP
+  JVB_ADVERTISE_IPS: "203.0.113.10"   # Replace with your actual public IP
+ 
+  # ── STUN server for ICE (fallback if direct media fails) ─────────────────
+  # Using Google's public STUN — replace with your own for production privacy.
+  # TURN extension point: add TURN_HOST/TURN_PORT/TURN_SECRET env vars here
+  # and in jitsi-common-config when you add a TURN server.
+  JVB_STUN_SERVERS: "stun:stun.l.google.com:19302,stun:stun1.l.google.com:19302"
+ 
+  # ── REST / stats ──────────────────────────────────────────────────────────
+  JVB_ENABLE_APIS: "rest"            # Enables /debug and /stats REST endpoints
+  JVB_REST_PORT: "8080"
+  ENABLE_COLIBRI_WEBSOCKET: "1"      # Enable Colibri2 WebSocket for bridge channel
+ 
+

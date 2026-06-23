@@ -9,3 +9,15 @@ data:
   XMPP_DOMAIN: "meet.local"
   XMPP_BOSH_URL_BASE: "http://prosody:5280"
   TZ: "UTC"
+  jvb.conf: |
+    videobridge {
+      enable-rest = true
+    }
+    http {
+      port = 8080
+    }
+    websockets {
+      enabled = true
+      domain = "meet.local"
+      tls = false
+    }

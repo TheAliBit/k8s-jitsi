@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: prosody
-          image: jitsi/prosody:latest
+          image: jitsi/jvb:jvb-2.3-296-g318c08ddc-1
           ports:
             - containerPort: 5222
             - containerPort: 5280

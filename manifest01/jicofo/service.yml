@@ -1,0 +1,24 @@
+# =============================================================================
+# Service: jicofo
+# Jicofo has no inbound traffic from other services, but we expose its REST
+# API internally so operators can query health/stats without exec-ing the pod.
+# Type: ClusterIP (internal only)
+# =============================================================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: jicofo
+  namespace: jitsi
+  labels:
+    app.kubernetes.io/name: jicofo
+    app.kubernetes.io/part-of: jitsi-meet
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: jicofo
+  ports:
+    - name: http-api
+      port: 8888
+      targetPort: http-api
+      protocol: TCP
+
