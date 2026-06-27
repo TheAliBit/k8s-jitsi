@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: jitsi-config
+  namespace: jitsi
+data:
+  PUBLIC_URL: "http://192.168.122.23:30080"
+
+  XMPP_DOMAIN: "meet.local"
+  XMPP_AUTH_DOMAIN: "auth.meet.local"
+  XMPP_MUC_DOMAIN: "muc.meet.local"
+  XMPP_INTERNAL_MUC_DOMAIN: "internal-muc.meet.local"
+
+  ENABLE_AUTH: "0"
+  ENABLE_GUESTS: "1"
+
+  TZ: "UTC"
+
+  # IMPORTANT for NodePort lab
+  XMPP_BOSH_URL_BASE: "http://192.168.122.23:30080/http-bind"
+  XMPP_WEBSOCKET_URL: "ws://192.168.122.23:30080/xmpp-websocket"
