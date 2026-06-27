@@ -1,0 +1,69 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+  namespace: monitoring
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 15s
+      evaluation_interval: 15s
+
+    scrape_configs:
+
+      # ---- Prometheus itself ----
+      - job_name: 'prometheus'
+        static_configs:
+          - targets: ['localhost:9090']
+
+      # ---- Node Exporter ----
+      # Discovers all node-exporter pods via Kubernetes API
+      - job_name: 'node-exporter'
+        kubernetes_sd_configs:
+          - role: endpoints
+            namespaces:
+              names: ['monitoring']
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_service_label_app]
+            action: keep
+            regex: node-exporter
+
+      # ---- JVB (Jitsi Videobridge) ----
+      # JVB exposes Prometheus metrics on port 8080 /metrics
+      - job_name: 'jvb'
+        kubernetes_sd_configs:
+          - role: pod
+            namespaces:
+              names: ['jitsi']
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_pod_label_app]
+            action: keep
+            regex: jvb
+          - source_labels: [__address__]
+            action: replace
+            regex: ([^:]+)(?::\d+)?
+            replacement: $1:8080
+            target_label: __address__
+          - action: replace
+            target_label: __metrics_path__
+            replacement: /metrics
+
+      # ---- Jicofo ----
+      # Jicofo exposes metrics on port 8888
+      - job_name: 'jicofo'
+        kubernetes_sd_configs:
+          - role: pod
+            namespaces:
+              names: ['jitsi']
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_pod_label_app]
+            action: keep
+            regex: jicofo
+          - source_labels: [__address__]
+            action: replace
+            regex: ([^:]+)(?::\d+)?
+            replacement: $1:8888
+            target_label: __address__
+          - action: replace
+            target_label: __metrics_path__
+            replacement: /metrics
