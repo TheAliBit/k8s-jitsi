@@ -1,0 +1,30 @@
+{{- if and
+       .Values.transcriber.enabled
+       (not .Values.transcriber.useExternalTranscriber)
+}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "jitsi-meet.transcriber.fullname" . }}
+  labels:
+    {{- include "jitsi-meet.transcriber.labels" . | nindent 4 }}
+data:
+  ENABLE_TRANSCRIPTIONS: "true"
+  JIGASI_ENABLE_REST: "true"
+  JIGASI_MODE: "transcriber"
+  XMPP_SERVER: {{ include "jitsi-meet.xmpp.server" . | quote }}
+
+  {{- with .Values.transcriber.whisper.customService }}
+  JIGASI_TRANSCRIBER_CUSTOM_SERVICE: {{ . | quote }}
+  {{- end }}
+
+  {{- with .Values.transcriber.whisper.url }}
+  JIGASI_TRANSCRIBER_WHISPER_URL: {{ . | quote }}
+  {{- end }}
+
+  {{- range $key, $value := .Values.transcriber.extraEnvs }}
+  {{-   if not (kindIs "invalid" $value) }}
+  {{      $key }}: {{ tpl $value $ | quote }}
+  {{-   end }}
+  {{- end }}
+{{- end }}

@@ -1,0 +1,22 @@
+{{- if and
+       .Values.jibri.enabled
+       (not .Values.jibri.useExternalJibri)
+}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "jitsi-meet.jibri.fullname" . }}
+  labels:
+    {{- include "jitsi-meet.jibri.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  ports:
+    - name: http-internal
+      protocol: TCP
+      port: 3333
+    - name: http-api
+      protocol: TCP
+      port: 2222
+  selector:
+    {{- include "jitsi-meet.jibri.selectorLabels" . | nindent 4 }}
+{{- end }}
