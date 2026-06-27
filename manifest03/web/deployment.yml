@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jitsi-web
+  namespace: jitsi
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jitsi-web
+  template:
+    metadata:
+      labels:
+        app: jitsi-web
+    spec:
+      containers:
+        - name: web
+          image: jitsi/web:stable-9220
+          envFrom:
+            - configMapRef:
+                name: jitsi-config
+          ports:
+            - containerPort: 80
+            - containerPort: 443
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"

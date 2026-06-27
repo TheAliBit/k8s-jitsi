@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prosody
+  namespace: jitsi
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: prosody
+  template:
+    metadata:
+      labels:
+        app: prosody
+    spec:
+      containers:
+        - name: prosody
+          image: jitsi/prosody:stable-9220
+          envFrom:
+            - configMapRef:
+                name: jitsi-config
+          env:
+            - name: JICOFO_AUTH_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: jitsi-secrets
+                  key: JICOFO_AUTH_PASSWORD
+            - name: JVB_AUTH_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: jitsi-secrets
+                  key: JVB_AUTH_PASSWORD
+          ports:
+            - containerPort: 5222   # XMPP client
+            - containerPort: 5269   # XMPP server
+            - containerPort: 5280   # BOSH / HTTP
+            - containerPort: 5347   # component
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
